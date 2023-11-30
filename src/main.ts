@@ -8,7 +8,7 @@ async function bootstrap() {
   // * agrego el API a la ruta
   app.setGlobalPrefix('api');
 
-  // * despues de instalar validator, los acivo aca
+  // * despues de instalar validator, los activo aca
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

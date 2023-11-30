@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,6 +7,9 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class ProductsService {
+
+  // * Para ver los logs de los errores que tenga hago esto
+  private readonly logger = new Logger('ProductsService')
 
   // * creo el constructor e inyecto el repositorio
   constructor(
@@ -23,7 +26,7 @@ export class ProductsService {
         await this.ProductRepository.save( product );
         return product;
       } catch (error) {
-        console.log(error)
+        this.logger.error(error);
         throw new InternalServerErrorException('Ayuda');
       }
   }
