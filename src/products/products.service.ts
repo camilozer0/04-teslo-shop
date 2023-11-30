@@ -1,11 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Product } from './entities/product.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ProductsService {
-  create(createProductDto: CreateProductDto) {
-    return 'This action adds a new product';
+
+  // * creo el constructor e inyecto el repositorio
+  constructor(
+    @InjectRepository(Product)
+    private readonly ProductRepository: Repository<Product>,
+  ) {}
+
+  // * Pongo el metodo como asincrono.
+  async create(createProductDto: CreateProductDto) {
+      try {
+        // * crea el producto con las propiedades, todavia no lo guarda en la base de datos
+        const product = this.ProductRepository.create(createProductDto);
+        // * Aca si lo guardo en la base de datos
+        await this.ProductRepository.save( product );
+        return product;
+      } catch (error) {
+        console.log(error)
+        throw new InternalServerErrorException('Ayuda');
+      }
   }
 
   findAll() {
