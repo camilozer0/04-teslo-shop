@@ -42,6 +42,15 @@ export class Product {
     @Column('text')
     gender: string;
 
+    /* Si lo dejo sin el text me saca error el postgres
+    siempre recibo un array, por eso lo pongo en true y
+    por defecto recibe un arreglo vacio */
+    @Column('text', {
+        array: true,
+        default: []
+    })
+    tags: string[];
+
     // TODO: create tags and images
 
     // * Verifico que el slug este creado y si no lo esta, lo creo a partir del titulo
