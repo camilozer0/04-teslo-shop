@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Product {
@@ -43,5 +43,22 @@ export class Product {
     gender: string;
 
     // TODO: create tags and images
+
+    // * Verifico que el slug este creado y si no lo esta, lo creo a partir del titulo
+    @BeforeInsert()
+    checkSlug() {
+        // * verifica que haya slug y si no lo crea a partir del titulo
+        if( !this.slug ) {
+            this.slug = this.title
+        } 
+        // * Luego de crear el slug lo edita
+        this.slug = this.slug
+        .toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll("'", '')
+    }
+
+/*     @BeforeUpdate()
+ */
 
 }

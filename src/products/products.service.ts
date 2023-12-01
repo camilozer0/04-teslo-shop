@@ -23,7 +23,7 @@ export class ProductsService {
         // * crea el producto con las propiedades, todavia no lo guarda en la base de datos
         const product = this.ProductRepository.create(createProductDto);
         // * Aca si lo guardo en la base de datos
-        await this.ProductRepository.save( product );
+        await this.ProductRepository.save(product);
         return product;
       } catch (error) {
         // * llamo a la funcion para mostrar el error
@@ -31,20 +31,42 @@ export class ProductsService {
       }
   }
 
-  findAll() {
-    return `This action returns all products`;
+  async findAll() {
+    try {
+      const allProducts = await this.ProductRepository.find();
+      return allProducts;
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findOne(id: string) {
+    try {
+      const product = await this.ProductRepository.findOne({where: { id } });
+      return product;
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    try {
+      if (this.findOne(id)) {
+        const product = await this.ProductRepository.update(id, updateProductDto)
+      }
+    } catch (error) {
+      this.handleDBExceptions(error)      
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: string) {
+    try {
+      if(this.findOne(id)) {
+        await this.ProductRepository.delete(id)
+      }
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
   }
 
   private handleDBExceptions( error: any ) {
