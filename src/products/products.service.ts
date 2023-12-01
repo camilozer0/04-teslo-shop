@@ -36,7 +36,6 @@ export class ProductsService {
 
 
   async findAll(PaginationDto: PaginationDto) {
-
     // desestructuramos el paginationDto y pongo los valores por defecto
     const { limit = 10, offset = 0 } = PaginationDto;
       const allProducts = await this.ProductRepository.find({
@@ -48,7 +47,6 @@ export class ProductsService {
   }
 
   async findOne(sValue: string) {
-
     let product: Product;
     if ( isUUID(sValue) ) {
       product = await this.ProductRepository.findOneBy({ id: sValue });
@@ -67,12 +65,17 @@ export class ProductsService {
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
+    const product = await this.ProductRepository.preload({
+      id: id,
+      ...updateProductDto
+    });
+    if ( !product) throw new NotFoundException(`Product with id: ${id} has not been found`);
+
     try {
-      if (this.findOne(id)) {
-        const product = await this.ProductRepository.update(id, updateProductDto)
-      }
+      await this.ProductRepository.save( product );
+      return product;
     } catch (error) {
-      this.handleDBExceptions(error)      
+      this.handleDBExceptions(error);
     }
   }
 

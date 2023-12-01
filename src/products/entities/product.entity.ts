@@ -46,7 +46,7 @@ export class Product {
 
     // * Verifico que el slug este creado y si no lo esta, lo creo a partir del titulo
     @BeforeInsert()
-    checkSlug() {
+    checkSlugCreate() {
         // * verifica que haya slug y si no lo crea a partir del titulo
         if( !this.slug ) {
             this.slug = this.title
@@ -58,7 +58,14 @@ export class Product {
         .replaceAll("'", '')
     }
 
-/*     @BeforeUpdate()
- */
+    @BeforeUpdate()
+    checkSlugUpdate() {
+        // No tengo que verificar el slug porque ya lo tengo (es requerido)
+        this.slug = this.slug
+        .toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll("'", '')
+    }
+
 
 }
