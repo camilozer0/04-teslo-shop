@@ -1,4 +1,5 @@
-import { BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ProductImage } from "./product-image.entity";
 
 @Entity()
 export class Product {
@@ -52,6 +53,17 @@ export class Product {
     tags: string[];
 
     // TODO: create tags and images
+    @OneToMany(
+        () => ProductImage,
+        (productImage) => productImage.product,
+        {
+            // ! Si yo hago alguna operacion de borrado por ejemplo, el cambio se ve reflejado en productImg
+            // ! Lo ideal es no borrar ningun producto, ya que se debe mantener la referencia
+            // ! puedo obtener detalles huerfanos (OJO)
+            cascade: true
+        }
+    )
+    images?: ProductImage;
 
     // * Verifico que el slug este creado y si no lo esta, lo creo a partir del titulo
     @BeforeInsert()
