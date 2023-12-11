@@ -20,7 +20,7 @@ export class ProductsController {
 
   @Get(':sValue')
   findOne(@Param('sValue') sValue: string) {
-    return this.productsService.findOne(sValue);
+    return this.productsService.findOnePlain(sValue);
   }
 
   @Patch(':id')

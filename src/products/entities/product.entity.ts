@@ -4,6 +4,7 @@ import { ProductImage } from "./product-image.entity";
 @Entity()
 export class Product {
 
+    // Lo vuelve la llave principal (en RDB)
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
@@ -14,6 +15,7 @@ export class Product {
     })
     title: string;
 
+    // Debo verificar que la base de datos reciba el tipo de datos
     @Column('float', {
         default: 0,
     })
@@ -52,7 +54,7 @@ export class Product {
     })
     tags: string[];
 
-    // TODO: create tags and images
+    // Tengo la relacion y debo pasar dos argumentos. 
     @OneToMany(
         () => ProductImage,
         (productImage) => productImage.product,
@@ -60,10 +62,10 @@ export class Product {
             // ! Si yo hago alguna operacion de borrado por ejemplo, el cambio se ve reflejado en productImg
             // ! Lo ideal es no borrar ningun producto, ya que se debe mantener la referencia
             // ! puedo obtener detalles huerfanos (OJO)
-            cascade: true
+            cascade: true, eager: true,
         }
     )
-    images?: ProductImage;
+    images?: ProductImage[];
 
     // * Verifico que el slug este creado y si no lo esta, lo creo a partir del titulo
     @BeforeInsert()

@@ -43,4 +43,12 @@ export class CreateProductDto {
     @IsOptional()
     tags: string[];
 
+    // Creo el campo de imagenes en el DTO para que sea recibido
+    @IsString({
+        each: true,
+    })
+    @IsArray()
+    @IsOptional()
+    images?: string[];
+
 }
