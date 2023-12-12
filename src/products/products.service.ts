@@ -3,7 +3,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product, ProductImage } from './entities';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { PaginationDto } from '../common/dtos/pagination.dto';
 import { validate as isUUID } from 'uuid'
 
@@ -17,10 +17,13 @@ export class ProductsService {
   // * creo el constructor e inyecto el repositorio
   constructor(
     @InjectRepository(Product)
-    private readonly ProductRepository: Repository<Product>,
+    private readonly productRepository: Repository<Product>,
     // * Para las imagenes creo otro repositorio
     @InjectRepository(ProductImage)
-    private readonly ProductImgRepository: Repository<ProductImage>,
+    private readonly productImgRepository: Repository<ProductImage>,
+    // * Para el queryRunner, el dataSource al insertarse de esta manera sabe
+    // *  cual es la cadena de conexion de base de datos, que usuario uso, la misma config que nuestro repositorio
+    private readonly dataSource: DataSource,
   ) {}
 
   // * Pongo el metodo como asincrono.
@@ -29,14 +32,14 @@ export class ProductsService {
         // Para sacar las imagnes ya que son una entidad distinta
         const { images = [], ...productDetails } = createProductDto;
         // * crea el producto con las propiedades, todavia no lo guarda en la base de datos
-        const product = this.ProductRepository.create({
+        const product = this.productRepository.create({
           ...productDetails,
           // al hacer esto creo las imagenes del producot y el TypeORM infiere que son instancias del producto
           // le asigna el id del producto a las imagenes
-          images: images.map( img => this.ProductImgRepository.create({ url: img }))
+          images: images.map( img => this.productImgRepository.create({ url: img }))
         });
         // * Aca si lo guardo en la base de datos
-        await this.ProductRepository.save(product);
+        await this.productRepository.save(product);
         // Uso el operador spread para devolver las imagenes como las recibi
         return {...product, images: images};
       } catch (error) {
@@ -49,7 +52,7 @@ export class ProductsService {
   async findAll(PaginationDto: PaginationDto) {
     // desestructuramos el paginationDto y pongo los valores por defecto
     const { limit = 10, offset = 0 } = PaginationDto;
-      const allProducts = await this.ProductRepository.find({
+      const allProducts = await this.productRepository.find({
         take: limit,
         skip: offset,
         // para ver las imagenes, me aparecen en las respuestas al llamar a findAll
@@ -67,9 +70,9 @@ export class ProductsService {
   async findOne(sValue: string) {
     let product: Product;
     if ( isUUID(sValue) ) {
-      product = await this.ProductRepository.findOneBy({ id: sValue });
+      product = await this.productRepository.findOneBy({ id: sValue });
     } else {
-      const queryBuilder = this.ProductRepository.createQueryBuilder('prod');
+      const queryBuilder = this.productRepository.createQueryBuilder('prod');
       // * Aca defino un query personalizado.
       product = await queryBuilder
       .where('UPPER(title) =:title or slug =:slug', {
@@ -95,24 +98,47 @@ export class ProductsService {
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    const product = await this.ProductRepository.preload({
+
+    const { images, ...toUpdate } = updateProductDto
+    const product = await this.productRepository.preload({
       id: id,
-      ...updateProductDto,
-      images: []
+      ...toUpdate
     });
     if ( !product) throw new NotFoundException(`Product with id: ${id} has not been found`);
 
+    // Create queryRunner
+    // Definimos una serie de procedimientos, no impacta la base de datos hasta que hagamos el commit
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    
     try {
-      await this.ProductRepository.save( product );
-      return product;
+      if ( images ) {
+        // tener cuidado porque se puede caer en DELETE * FROM ProductImage
+        await queryRunner.manager.delete( ProductImage, { product: { id } } );
+        product.images = images.map( 
+          image => this.productImgRepository.create({ url: image })
+          )
+      }
+
+      await queryRunner.manager.save( product );
+      await queryRunner.commitTransaction();
+      await queryRunner.release();
+      // Al hacer el queryRunner ya no necesito esta linea
+      // await this.productRepository.save( product );
+      return this.findOnePlain( id );
     } catch (error) {
+      // si hay un error con el queryRunner, devuelvo lo que habia hecho
+      await queryRunner.rollbackTransaction();
+      await queryRunner.release();
       this.handleDBExceptions(error);
     }
   }
 
   async remove(id: string) {
     const product = await this.findOne(id) 
-    await this.ProductRepository.remove( product )
+    await this.productRepository.remove( product )
   }
 
   private handleDBExceptions( error: any ) {
