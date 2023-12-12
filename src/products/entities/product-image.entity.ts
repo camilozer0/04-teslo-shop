@@ -15,6 +15,8 @@ export class ProductImage {
     @ManyToOne(
         () => Product,
         (product) => product.images,
+        // Lo que hace esta linea es que el borrar el producto se borren las imagenes que estan conectadas a el en cascada
+        { onDelete: "CASCADE"}
     )
     product: Product
 
