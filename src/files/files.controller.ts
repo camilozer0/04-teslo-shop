@@ -1,27 +1,35 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseInterceptors, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { fileFilter } from './helpers/fileFilter.helper';
+import { fileFilter, fileNamer } from './helpers';
+import { diskStorage } from 'multer';
 
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
+
+  // ! Para los archivos lo mejor es guardarlos en otra parte, aca lo vamos a hacer en el filesystem
+  // ! lo cual es una practica que se DEBE evitar a toda costa, por motivos de seguridad
   @Post('product')
   // Uso un interceptor para procesar el archivo.
   @UseInterceptors( FileInterceptor('file', {
     // envio la referencia al fileFilter que tengo en la carpeta helper
-    fileFilter: fileFilter
+    fileFilter: fileFilter,
+    storage: diskStorage({
+      destination: './static/products',
+      filename: fileNamer,
+    })
   }) )
   // Uso el decorador para saber que es un archivo, asi como Body o QueryParams
   uploadFile( @UploadedFile(
     // * Puedo usar el parseFilePipe para hacer las validaciones (revisar)
-    // new ParseFilePipe({
-    //   validators: [
-    //     new MaxFileSizeValidator({ maxSize: 10000 }),
-    //     new FileTypeValidator({ fileType: 'image/jpeg' }),
-    //   ],
-    // }),
+    new ParseFilePipe({
+      validators: [
+        new MaxFileSizeValidator({ maxSize: 1000000 }),
+        new FileTypeValidator({ fileType: 'image/jpeg' }),
+      ],
+    }),
   ) file: Express.Multer.File ) {
 
     if ( !file ) {
